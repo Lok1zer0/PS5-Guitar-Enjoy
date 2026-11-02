@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PS5 Guitar Enjoy — diagnóstico</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#10131c;color:#f1f4fa;font:18px system-ui,sans-serif}main{max-width:980px;margin:32px auto;padding:24px}h1{font-size:30px;margin:4px 0}.muted{color:#abb5c9;font-size:15px}section{background:#1b2130;border:1px solid #303b51;border-radius:16px;padding:22px;margin:18px 0}#status{font-size:24px;color:#8ecbff}.frets{display:flex;gap:12px;margin:24px 0}.fret{flex:1;padding:25px 5px;text-align:center;border:3px solid var(--c);border-radius:12px;opacity:.45;background:#0e121a}.fret.on{background:var(--c);color:#080b10;opacity:1;font-weight:bold;box-shadow:0 0 16px var(--c)}.keys{display:flex;flex-wrap:wrap;gap:10px}.key{border:1px solid #52617c;border-radius:8px;padding:12px;min-width:110px;text-align:center}.key.on{background:#cee4ff;color:#102030}meter{width:100%;height:30px}pre{font-size:14px;white-space:pre-wrap;overflow-wrap:anywhere}button{background:#b4d5ff;color:#111b2b;padding:14px 25px;font:inherit;border:0;border-radius:9px;cursor:pointer}button:focus{outline:3px solid white}#end{color:#ffd59f}label{display:block;margin-top:12px}.numbers{font-family:monospace}
+</style>
+<main><p class="muted">PS5 GUITAR ENJOY · DIAGNÓSTICO EXPERIMENTAL v0.1</p><h1>Teste da guitarra</h1>
+<p>Conecte o receptor original e sincronize a guitarra.</p>
+<section><div id="status" role="status">Conectando ao diagnóstico…</div><p id="detail" class="muted"></p><p id="end"></p>
+<div class="frets"><div class="fret" style="--c:#5be486" data-bit="0">Verde</div><div class="fret" style="--c:#ff7474" data-bit="1">Vermelho</div><div class="fret" style="--c:#ffdc67" data-bit="2">Amarelo</div><div class="fret" style="--c:#78acff" data-bit="3">Azul</div><div class="fret" style="--c:#ffa455" data-bit="4">Laranja</div></div>
+<div class="keys"><div class="key" data-bit="5">Strum ↑</div><div class="key" data-bit="6">Strum ↓</div><div class="key" data-bit="7">Start</div><div class="key" data-bit="8">Select</div><div class="key" data-bit="9">PS</div></div>
+<label>Whammy <span id="whammy">—</span><meter id="wm" min="128" max="255" value="128"></meter></label>
+<p>Slider bruto: <span id="slider">—</span> · Aceleração bruta: <span id="accel">—</span></p>
+<p class="muted">Inclinação / Star Power ainda não validada. A tela atualiza a 10 Hz; pulsos curtos ficam registrados nos contadores.</p></section>
+<section><h2>Diagnóstico</h2><pre id="stats">Aguardando…</pre><pre id="raw"></pre><p class="muted">O intervalo entre leituras mede a entrega USB e o agendamento deste processo. Ele não mede a latência entre apertar um botão e a imagem do jogo.</p><button id="stop">Encerrar diagnóstico</button> <button id="copy">Copiar dados</button></section>
+<p class="muted">Este teste lê o receptor 12BA:0100, revisão 0005. Ainda não encaminha comandos aos jogos. Encerra automaticamente após 3 minutos; a janela do navegador pode permanecer aberta.</p>
+</main><script>
+(function(){'use strict';var running=true,last=null,names=['Verde','Vermelho','Amarelo','Azul','Laranja','Strum ↑','Strum ↓','Start','Select','PS'];
+function text(id,value){document.getElementById(id).textContent=value;}
+function clearButtons(){document.querySelectorAll('[data-bit]').forEach(function(e){e.classList.remove('on');});}
+function render(s){last=s;var valid=s.connected&&s.has_report&&s.age_ms<2000;clearButtons();
+document.querySelectorAll('[data-bit]').forEach(function(e){e.classList.toggle('on',valid&&!!(s.buttons&(1<<Number(e.dataset.bit))));});
+text('status',s.connected?(s.has_report?'Guitarra detectada':'Receptor aberto · aguardando relatórios'):'Procurando o receptor');
+text('detail','USB '+s.node+' · 12BA:0100 rev.0005 · endpoint '+s.endpoint+' · '+s.packet_size+' bytes máx.');
+text('end',Math.max(0,s.remaining_s)+' segundos restantes');text('whammy',valid?s.whammy:'—');document.getElementById('wm').value=valid?s.whammy:128;
+text('slider',valid?s.slider:'—');text('accel',valid?s.accel.join(' / '):'—');
+text('stats','Relatórios válidos: '+s.reports+' | inválidos: '+s.invalid+'\nMudanças: '+s.changes+' | idade do último: '+s.age_ms+' ms\nMaior intervalo de entrega: '+s.max_gap_us+' µs\nNós USB vistos: '+s.nodes+' | falhas de acesso: '+s.errors+' | último errno: '+s.errno+'\n\nPressionamentos registrados:\n'+names.map(function(n,i){return n+': '+s.presses[i];}).join(' · '));
+text('raw','Último relatório (27 bytes):\n'+(s.connected&&s.has_report?s.raw:'—'));}
+function tick(){if(!running)return;fetch('state',{cache:'no-store'}).then(function(r){if(!r.ok)throw Error('HTTP '+r.status);return r.json();}).then(function(s){if(!running)return;render(s);setTimeout(tick,100);}).catch(function(){if(!running)return;clearButtons();text('status','Diagnóstico indisponível ou encerrado');text('end','O limite é de 3 minutos. Sem resposta do processo, o encerramento não pode ser confirmado nesta tela.');setTimeout(tick,1000);});}
+document.getElementById('stop').onclick=function(){fetch('stop',{method:'POST',body:''}).then(function(r){if(!r.ok)throw Error('stop');running=false;clearButtons();text('status','Diagnóstico encerrado');text('end','Pode fechar esta janela.');}).catch(function(){text('end','Não foi possível confirmar o encerramento. O limite automático continua ativo.');});};
+document.getElementById('copy').onclick=function(){var data=JSON.stringify(last,null,2);if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(data).catch(function(){window.prompt('Copie os dados:',data);});}else window.prompt('Copie os dados:',data);};tick();})();
+</script></html>
