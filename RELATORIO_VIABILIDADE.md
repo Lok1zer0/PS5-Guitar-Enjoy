@@ -4,7 +4,7 @@ Data: **02/11/2026**. Plataforma pretendida: PS5 desbloqueado, firmware **13.60*
 
 ## 1. Resumo executivo
 
-**Há uma rota plausível para este GH5: a imagem fornecida contém uma recompilação da versão Xbox 360, com adaptador de pads PS5 para guitarra Xbox 360 e configuração em modo guitarra.** Isso muda a recomendação para **B — payload residente com integração ao sistema de entrada**, usando um pad virtual e o adaptador já presente no port, caso os testes confirmem esse caminho. Continua sem demonstração de guitarra virtual universal em todos os jogos PS4/PS5. Ver seções 20 e 23.
+**Há uma rota plausível para este GH5: a imagem se identifica como recompilação da versão Xbox 360 e o binário contém um adaptador de pads PS5 para guitarra Xbox 360, acompanhado de configuração em modo guitarra.** Isso muda a recomendação para **B — payload residente com integração ao sistema de entrada**, usando um pad virtual e o adaptador já presente no port, caso os testes confirmem esse caminho. Continua sem demonstração de guitarra virtual universal em todos os jogos PS4/PS5. Ver seções 20 e 23.
 
 O usuário observou DualSense apenas nos menus, mas ainda não havia testado **segurar o fret e palhetar pelo direcional** como documentado dentro da imagem. Isso é uma observação de uso, não prova de rejeição do DualSense pelo runtime. A prioridade continua sendo guitarra PS3 física com todos os comandos e baixa latência. O esquema PS2 sem palhetada separada seria outra funcionalidade, ainda não implementada.
 
@@ -356,7 +356,7 @@ As letras nesta tabela descrevem arquiteturas; na decisão final usa-se a opçã
 | Python no PATH | Entradas `WindowsApps\python.exe`/`python3.exe`; não tratadas como runtime funcional verificado. |
 | `PS5_PAYLOAD_SDK` | Variável não definida. O SDK foi clonado como **referência**, não instalado como toolchain. |
 
-**Proposta futura:** WSL2 com distribuição Linux suportada, SDK **ps5-payload-dev/sdk v0.45** fixado por commit, Clang/LLD e ferramentas conforme README do SDK. O README lista Clang/LLD 18 e Bash; o build/CI do AnyController usa SDK v0.45, make e LLVM. Para conservar o parser C++ com STL, preparar também libc++/runtime conforme `sdk/README.md:52–57` e validar um ELF mínimo antes da ponte. Container Linux é alternativa se Docker for instalado/configurado depois. Nenhuma dependência foi instalada nesta fase. [SDK][SDK-readme] · [CI][AC-ci]
+**Proposta inicial, posteriormente substituída pelo build Windows da seção 24:** WSL2 com distribuição Linux suportada, SDK **ps5-payload-dev/sdk v0.45** fixado por commit, Clang/LLD e ferramentas conforme README do SDK. O README lista Clang/LLD 18 e Bash; o build/CI do AnyController usa SDK v0.45, make e LLVM. Para conservar o parser C++ com STL, seria necessário também libc++/runtime conforme `sdk/README.md:52–57`. O diagnóstico C11 dispensou STL, WSL e container. [SDK][SDK-readme] · [CI][AC-ci]
 
 Não compilar o PS5SX2 inteiro para obter o parser. Seu runtime gráfico, JIT, BIOS e dependências do emulador não são necessários ao componente HID independente.
 
@@ -566,11 +566,11 @@ O teste de inspeção da etapa 0 deve agora procurar, nesta ordem:
 4. Entregar os relatórios físicos pelo leitor/parser já identificado e conservar a identidade de instrumento até o consumidor.
 5. Só investigar USB direto/`sceUsbd*` como backend principal se os imports ou o runtime do pacote sustentarem essa rota.
 
-Se essa hipótese se confirmar, a integração pode ser menor que emular um novo dispositivo USB global. O mesmo caminho de instrumento pode depois receber o DualSense remapeado como fonte alternativa. **Nenhuma dessas consequências está validada para o pacote PS5.** A decisão permanece C, com prioridade mais precisa para a **adaptação da API de periféricos**; A/B só podem substituir essa decisão depois de demonstrar identidade e gameplay fora de um patch específico.
+Na hipótese então considerada para uma adaptação do original PS3, a integração poderia ser menor que emular USB global, com decisão provisória C. A imagem recebida depois mostrou outro caminho: versão Xbox 360 com adaptador próprio. Essa descoberta revisou a recomendação para B como experimento plausível, ainda dependente de gameplay no console. Não aplicar o contrato `cellPad*` desta seção ao port analisado.
 
 Licenciamento: o README do RPCS3 declara **GPL-2.0-only por padrão**, com possíveis exceções por arquivo. Ele foi usado para estudar o contrato; **nenhum código foi copiado** para a ponte. Não presumir que sua licença seja a mesma GPLv3 dos componentes anteriores; qualquer reutilização de código exigiria análise dos headers/licença dos arquivos escolhidos e da combinação pretendida.
 
-Não foi encontrado nesta busca um fonte público verificado do **GH5 comercial original** nem um fonte identificado do **pacote PS5 indicado**. A evidência nova é o contrato pad PS3 representado em código público, reforçado pelos imports de uma execução externa de GH5 original. Nenhum ELF novo foi implementado e o clone RPCS3 permaneceu sem alterações.
+Não foi encontrado nesta busca um fonte público verificado do **GH5 comercial original** nem um fonte identificado do **pacote PS5 indicado**. A evidência desta etapa foi o contrato pad PS3 representado em código público, reforçado pelos imports de uma execução externa de GH5 original. Até esse ponto ainda não havia ELF novo; o diagnóstico posteriormente autorizado está na seção 24. O clone RPCS3 permaneceu sem alterações.
 
 ## 22. Complemento — diagnóstico físico da unidade do usuário no Windows
 
